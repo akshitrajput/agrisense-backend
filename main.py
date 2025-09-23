@@ -26,7 +26,7 @@ def read_root():
     """Root endpoint for basic connectivity check."""
     return {"message": "AgriSense Backend is running."}
 
-@app.get("/ping")
+@app.api_route("/ping", methods=["GET", "HEAD"])
 def ping():
     """Dedicated health check endpoint for uptime monitoring."""
     return {"status": "ok", "message": "AgriSense server is healthy."}
