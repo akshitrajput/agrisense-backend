@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 # --- Configuration ---
-# **FIX:** Get the API key from an environment variable
+# *FIX:* Get the API key from an environment variable
 KINDWISE_API_KEY = os.getenv("KINDWISE_API_KEY") 
 KINDWISE_API_URL = "https://crop.kindwise.com/api/v1/identification"
 
@@ -25,14 +25,20 @@ app.add_middleware(
 def read_root():
     return {"message": "AgriSense Backend is running."}
 
+
+@app.get("/ping")
+def ping():
+    return {"status": "ok", "message": "AgriSense server is healthy."}    
+
 @app.post("/analyze")
 async def analyze_image(image: UploadFile = File(...)):
-    # **Check if the API key is set**
+    # *Check if the API key is set*
     if not KINDWISE_API_KEY:
         raise HTTPException(status_code=500, detail="API key is not configured on the server.")
 
     try:
         image_bytes = await image.read()
+        print(f"Received image with size: {len(image_bytes)} bytes")
         base64_image = base64.b64encode(image_bytes).decode('utf-8')
 
         headers = {
