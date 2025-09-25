@@ -23,11 +23,21 @@ genai.configure(api_key=GEMINI_API_KEY)
 gemini_model = genai.GenerativeModel('gemini-1.5-flash')
 
 # --- Font Registration ---
+# **FIX 1:** Register every font file you have downloaded.
+# Each font is given a unique name that we can refer to later.
 try:
     pdfmetrics.registerFont(TTFont('NotoSans', 'fonts/NotoSans-Regular.ttf'))
     pdfmetrics.registerFont(TTFont('NotoSansDevanagari', 'fonts/NotoSansDevanagari-Regular.ttf'))
+    pdfmetrics.registerFont(TTFont('NotoSansTamil', 'fonts/NotoSansTamil-Regular.ttf'))
+    pdfmetrics.registerFont(TTFont('NotoSansBengali', 'fonts/NotoSansBengali-Regular.ttf'))
+    pdfmetrics.registerFont(TTFont('NotoSansTelugu', 'fonts/NotoSansTelugu-Regular.ttf'))
+    pdfmetrics.registerFont(TTFont('NotoSansGujarati', 'fonts/NotoSansGujarati-Regular.ttf'))
+    pdfmetrics.registerFont(TTFont('NotoSansKannada', 'fonts/NotoSansKannada-Regular.ttf'))
+    pdfmetrics.registerFont(TTFont('NotoSansOriya', 'fonts/NotoSansOriya-Regular.ttf'))
+    pdfmetrics.registerFont(TTFont('NotoSansMalayalam', 'fonts/NotoSansMalayalam-Regular.ttf'))
+    pdfmetrics.registerFont(TTFont('NotoSansGurmukhi', 'fonts/NotoSansGurmukhi-Regular.ttf'))
 except Exception as e:
-    print(f"Font loading error: {e}. Make sure font files are in the 'fonts' directory.")
+    print(f"Font loading error: {e}. Make sure all font files are in the 'fonts' directory.")
 
 app = FastAPI()
 
@@ -38,20 +48,21 @@ app.add_middleware(
 )
 
 # --- Language & Font Mapping ---
+# **FIX 2:** Update the map to use the newly registered font for each language.
 LANGUAGE_MAP = {
     "en": {"name": "English", "font": "NotoSans"},
     "hi": {"name": "Hindi", "font": "NotoSansDevanagari"},
-    "ta": {"name": "Tamil", "font": "NotoSans"},
-    "bn": {"name": "Bengali", "font": "NotoSans"},
-    "te": {"name": "Telugu", "font": "NotoSans"},
+    "ta": {"name": "Tamil", "font": "NotoSansTamil"},
+    "bn": {"name": "Bengali", "font": "NotoSansBengali"},
+    "te": {"name": "Telugu", "font": "NotoSansTelugu"},
     "mr": {"name": "Marathi", "font": "NotoSansDevanagari"},
-    "ur": {"name": "Urdu", "font": "NotoSans"},
-    "gu": {"name": "Gujarati", "font": "NotoSans"},
-    "kn": {"name": "Kannada", "font": "NotoSans"},
-    "or": {"name": "Odia", "font": "NotoSans"},
-    "ml": {"name": "Malayalam", "font": "NotoSans"},
-    "pa": {"name": "Punjabi", "font": "NotoSans"},
-    "as": {"name": "Assamese", "font": "NotoSans"},
+    "ur": {"name": "Urdu", "font": "NotoSans"}, # Placeholder: Requires a specific Urdu font like Noto Nastaliq Urdu
+    "gu": {"name": "Gujarati", "font": "NotoSansGujarati"},
+    "kn": {"name": "Kannada", "font": "NotoSansKannada"},
+    "or": {"name": "Odia", "font": "NotoSansOriya"},
+    "ml": {"name": "Malayalam", "font": "NotoSansMalayalam"},
+    "pa": {"name": "Punjabi", "font": "NotoSansGurmukhi"},
+    "as": {"name": "Assamese", "font": "NotoSansBengali"}, # Assamese uses the Bengali script font
 }
 
 # --- PDF Design Helper Functions ---
@@ -73,7 +84,6 @@ def draw_logo(p, x, y):
 def draw_multiline_text(p, x, y, text_content, max_width):
     """Draws text that wraps automatically."""
     lines = []
-    # Ensure text_content is a string before splitting
     text_content = str(text_content)
     for line in text_content.split('\n'):
         words = line.split()
@@ -88,7 +98,7 @@ def draw_multiline_text(p, x, y, text_content, max_width):
 
     for line in lines:
         p.drawString(x, y, line)
-        y -= p._leading # p._leading is the line spacing
+        y -= p._leading
     return y
 
 
@@ -98,16 +108,14 @@ def create_pdf_report(analysis_data: dict, language_config: dict, labels: dict) 
     width, height = letter
     font_name = language_config.get("font", "NotoSans")
     
-    # 1. Draw Logo and Header using translated labels
     draw_logo(p, 0.5 * inch, height - 0.7 * inch)
     p.setFont("Helvetica-Bold", 22)
-    p.drawString(1.2 * inch, height - 0.65 * inch, "AgriSense") # Keep brand name in English
+    p.drawString(1.2 * inch, height - 0.65 * inch, "AgriSense")
     p.setFont(font_name, 14)
     p.drawString(1.2 * inch, height - 0.9 * inch, labels.get('report_title', "Plant Health Report"))
     p.setStrokeColorRGB(0.8, 0.8, 0.8)
     p.line(0.5 * inch, height - 1.2 * inch, width - 0.5 * inch, height - 1.2 * inch)
 
-    # 2. Extract Data
     kindwise_suggestions = analysis_data.get("kindwise_analysis", {}).get("result", {}).get("disease", {}).get("suggestions", [])
     gemini_analysis = analysis_data.get("gemini_analysis", {})
     disease_name = "Healthy"
@@ -117,17 +125,14 @@ def create_pdf_report(analysis_data: dict, language_config: dict, labels: dict) 
         confidence = kindwise_suggestions[0].get('probability', 0.0)
     severity = "High" if confidence > 0.75 else "Medium" if confidence > 0.4 else "Low"
 
-    # 3. Write Content to PDF
     y_position = height - 1.8 * inch
     p.setFont(font_name, 11)
     
-    # Basic Info with translated labels
     p.drawString(0.7 * inch, y_position, f"{labels.get('disease_predicted', 'Disease Predicted')}: {disease_name}")
     p.drawString(0.7 * inch, y_position - 20, f"{labels.get('confidence', 'Confidence')}: {(confidence * 100):.1f}%")
     p.drawString(0.7 * inch, y_position - 40, f"{labels.get('severity', 'Severity')}: {severity}")
     y_position -= 80
 
-    # Detailed Analysis from Gemini with translated section titles
     sections = [
         ("root_cause", labels.get('root_cause', "Root Cause")),
         ("pesticides", labels.get('pesticides', "Recommended Pesticides")),
@@ -147,7 +152,7 @@ def create_pdf_report(analysis_data: dict, language_config: dict, labels: dict) 
         if isinstance(content, list):
             for item in content:
                 y_position = draw_multiline_text(p, 0.9 * inch, y_position, f"• {item}", width - 1.4 * inch)
-                y_position -= 5 # Extra space between bullet points
+                y_position -= 5
         else:
             y_position = draw_multiline_text(p, 0.9 * inch, y_position, content, width - 1.4 * inch)
         
@@ -176,7 +181,6 @@ async def analyze_image(image: UploadFile = File(...), language_code: str = Form
 
         language_config = LANGUAGE_MAP.get(language_code, LANGUAGE_MAP["en"])
         
-        # Default analysis for healthy plants, now includes English labels
         gemini_result = {
             "labels": {
                 "report_title": "Plant Health Report", "disease_predicted": "Disease Predicted",
@@ -195,7 +199,6 @@ async def analyze_image(image: UploadFile = File(...), language_code: str = Form
             confidence = suggestions[0].get('probability', 0)
             intensity = "High" if confidence > 0.75 else "Medium" if confidence > 0.4 else "Low"
             
-            # **UPDATED PROMPT:** Now asks for both labels and analysis in the target language.
             prompt = (
                 f"You are an agricultural expert for India. Analyze the following plant disease and provide a response in {language_config['name']}. "
                 f"Your entire output must be a single, valid JSON object. Do not include any text before or after the JSON. "
