@@ -73,8 +73,9 @@ def draw_logo(p, x, y):
 def draw_multiline_text(p, x, y, text_content, max_width):
     """Draws text that wraps automatically."""
     lines = []
+    # Ensure text_content is a string before splitting
+    text_content = str(text_content)
     for line in text_content.split('\n'):
-        # Simple word wrap logic
         words = line.split()
         current_line = ""
         for word in words:
@@ -87,7 +88,7 @@ def draw_multiline_text(p, x, y, text_content, max_width):
 
     for line in lines:
         p.drawString(x, y, line)
-        y -= p._leading
+        y -= p._leading # p._leading is the line spacing
     return y
 
 
@@ -97,10 +98,10 @@ def create_pdf_report(analysis_data: dict, language_config: dict, labels: dict) 
     width, height = letter
     font_name = language_config.get("font", "NotoSans")
     
-    # 1. Draw Logo and Header
+    # 1. Draw Logo and Header using translated labels
     draw_logo(p, 0.5 * inch, height - 0.7 * inch)
     p.setFont("Helvetica-Bold", 22)
-    p.drawString(1.2 * inch, height - 0.65 * inch, "AgriSense")
+    p.drawString(1.2 * inch, height - 0.65 * inch, "AgriSense") # Keep brand name in English
     p.setFont(font_name, 14)
     p.drawString(1.2 * inch, height - 0.9 * inch, labels.get('report_title', "Plant Health Report"))
     p.setStrokeColorRGB(0.8, 0.8, 0.8)
@@ -120,13 +121,13 @@ def create_pdf_report(analysis_data: dict, language_config: dict, labels: dict) 
     y_position = height - 1.8 * inch
     p.setFont(font_name, 11)
     
-    # Basic Info
+    # Basic Info with translated labels
     p.drawString(0.7 * inch, y_position, f"{labels.get('disease_predicted', 'Disease Predicted')}: {disease_name}")
     p.drawString(0.7 * inch, y_position - 20, f"{labels.get('confidence', 'Confidence')}: {(confidence * 100):.1f}%")
     p.drawString(0.7 * inch, y_position - 40, f"{labels.get('severity', 'Severity')}: {severity}")
     y_position -= 80
 
-    # Detailed Analysis from Gemini
+    # Detailed Analysis from Gemini with translated section titles
     sections = [
         ("root_cause", labels.get('root_cause', "Root Cause")),
         ("pesticides", labels.get('pesticides', "Recommended Pesticides")),
@@ -175,7 +176,7 @@ async def analyze_image(image: UploadFile = File(...), language_code: str = Form
 
         language_config = LANGUAGE_MAP.get(language_code, LANGUAGE_MAP["en"])
         
-        # Default analysis for healthy plants
+        # Default analysis for healthy plants, now includes English labels
         gemini_result = {
             "labels": {
                 "report_title": "Plant Health Report", "disease_predicted": "Disease Predicted",
@@ -194,7 +195,7 @@ async def analyze_image(image: UploadFile = File(...), language_code: str = Form
             confidence = suggestions[0].get('probability', 0)
             intensity = "High" if confidence > 0.75 else "Medium" if confidence > 0.4 else "Low"
             
-            # **CHANGE:** New, more advanced prompt for both labels and analysis
+            # **UPDATED PROMPT:** Now asks for both labels and analysis in the target language.
             prompt = (
                 f"You are an agricultural expert for India. Analyze the following plant disease and provide a response in {language_config['name']}. "
                 f"Your entire output must be a single, valid JSON object. Do not include any text before or after the JSON. "
