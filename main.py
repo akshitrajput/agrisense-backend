@@ -126,7 +126,13 @@ def ping():
     return {"status": "ok", "message": "AgriSense server is healthy."}
 
 @app.post("/analyze")
-async def analyze_image(image: UploadFile = File(...), language_code: str = Form("en")):
+async def analyze_image(
+    image: UploadFile = File(...),
+    language_code: str = Form("en"),
+    row: int = Form(...),
+    col: int = Form(...)
+):
+    print(f"Received image for coordinate ({row}, {col}) in language: {language_code}")
     if not KINDWISE_API_KEY or not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="API keys are not configured on the server.")
 
