@@ -52,9 +52,15 @@ async def perform_full_analysis(image_bytes: bytes, language_code: str) -> dict:
     headers = {"Api-Key": KINDWISE_API_KEY, "Content-Type": "application/json"}
     kindwise_data = {"images": [base64_image], "similar_images": True}
     
+    print("\n>>> Sending request to Kindwise API...")
     kindwise_response = requests.post(KINDWISE_API_URL, headers=headers, json=kindwise_data)
     kindwise_response.raise_for_status()
     kindwise_result = kindwise_response.json()
+
+    # <<< CHANGE: ADDED THIS PRINT STATEMENT FOR DEBUGGING >>>
+    print("\n--- KINDWISE API RESPONSE ---")
+    print(json.dumps(kindwise_result, indent=2)) # Pretty-print the JSON
+    print("-----------------------------\n")
 
     gemini_analysis = {"root_cause": "N/A", "pesticides": [], "precautions": "The plant appears healthy."}
     suggestions = kindwise_result.get('result', {}).get('disease', {}).get('suggestions')
@@ -72,6 +78,7 @@ async def perform_full_analysis(image_bytes: bytes, language_code: str) -> dict:
             f"The JSON object must have these exact keys: 'root_cause', 'pesticides', 'precautions'."
         )
         
+        print(">>> Sending request to Gemini API...")
         gemini_response = gemini_model.generate_content(prompt)
         cleaned_response_text = gemini_response.text.strip().lstrip("```json").rstrip("```")
         gemini_analysis = json.loads(cleaned_response_text)
