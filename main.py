@@ -20,7 +20,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 KINDWISE_API_URL = "https://crop.kindwise.com/api/v1/identification"
 
 genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+gemini_model = genai.GenerativeModel('gemini-2.5-flash')
 
 # --- Font Registration ---
 # **FIX 1:** Register every font file you have downloaded.
