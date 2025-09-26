@@ -4,3 +4,4 @@ requests
 python-multipart
 google-generativeai
 reportlab
+paho-mqtt
